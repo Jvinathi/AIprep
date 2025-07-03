@@ -1,6 +1,11 @@
 "use server";
 
 import { auth, db } from "@/firebase/admin";
+
+// make sure this is your Firebase config file
+import  Interview from '@/app/(root)/interview/page'; // adjust if your type is elsewhere
+import { DocumentData } from 'firebase/firestore';
+
 import { cookies } from "next/headers";
 
 // Session duration (1 week)
@@ -130,3 +135,49 @@ export async function isAuthenticated() {
   const user = await getCurrentUser();
   return !!user;
 }
+
+export async function getInterviewByUserId(userId: string): Promise<Interview[] | null> {
+  try {
+    const snapshot = await db
+      .collection('interviews')
+      .where('userId', '==', userId)
+      .orderBy('createdAt', 'desc')
+      .get();
+
+    if (snapshot.empty) return null;
+
+    return snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    })) as Interview[];
+  } catch (error) {
+    console.error("Error fetching interviews:", error);
+    return null;
+  }
+}
+
+
+
+export async function getLatestInterviews(params: GetLatestInterviewsParams): Promise<Interview[] | null> {
+  const { userId,limit=20}=params;
+  try {
+    const snapshot = await db
+      .collection('interviews')
+      .where('finalized', '==', true)
+      .orderBy('createdAt', 'desc')
+      .where('userId','!=',userId)
+      .limit(limit)
+      .get();
+
+    if (snapshot.empty) return null;
+
+    return snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    })) as Interview[];
+  } catch (error) {
+    console.error("Error fetching interviews:", error);
+    return null;
+  }
+}
+

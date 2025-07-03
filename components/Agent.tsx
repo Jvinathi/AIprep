@@ -18,11 +18,6 @@ interface SavedMessage {
   content: string;
 }
 
-interface AgentProps {
-  userName: string;
-  userId: string;
-  type?: string;
-}
 
 const Agent = ({ userName, userId, type }: AgentProps) => {
   const router = useRouter();
@@ -44,16 +39,8 @@ const Agent = ({ userName, userId, type }: AgentProps) => {
 
     const onSpeechStart = () => setIsSpeaking(true);
     const onSpeechEnd = () => setIsSpeaking(false);
-    const onError = async (error: any) => {
-  console.log('Vapi Error:', error);
-
-  // Show full error response if it's available
-  if (error?.error?.json) {
-    const detailed = await error.error.json();
-    console.error('Detailed Vapi Error:', detailed);
-  }
-};
-
+   const onError =(error:Error)=>console.log('Error',error);
+  
     vapi.on('call-start', onCallStart);
     vapi.on('call-end', onCallEnd);
     vapi.on('message', onMessage);
@@ -72,30 +59,20 @@ const Agent = ({ userName, userId, type }: AgentProps) => {
   }, []);
 
   useEffect(() => {
-    if (callStatus === CallStatus.FINISHED) {
-      router.push('/');
-    }
-  }, [callStatus]);
+    if (callStatus === CallStatus.FINISHED) router.push('/');
+  }, [messages,callStatus,type,userId]);
 
   const handleCall = async () => {
-    try {
-      setCallStatus(CallStatus.CONNECTING);
-      await vapi.start(process.env.NEXT_PUBLIC_VAPI_ASSISTANT_ID!, {
-  variableValues: {
-    username: userName,
-    userid: userId,
-  },
-  voice: {
-    provider: 'vapi',
-    voiceId: 'Kylie', // or Shimmer, Cody, etc.
-  },
-});
 
-    } catch (error) {
-      console.error('Failed to start call:', error);
-      setCallStatus(CallStatus.FINISHED);
+      setCallStatus(CallStatus.CONNECTING);
+    await vapi.start(process.env.NEXT_PUBLIC_VAPI_WORKFLOW_ID!, {
+        variableValues: {
+          username: userName,
+          userid: userId,
+        },
+      });
     }
-  };
+ 
 
   const handleDisconnect = async () => {
     setCallStatus(CallStatus.FINISHED);
